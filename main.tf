@@ -12,6 +12,7 @@ module "compute" {
     provisioner_info = "info.php"
     provisioner_submit = "submit.php"
     sns_email_endpoint = "pedroaarom.astocondor@tajamar365.com"
+    slack_webhook_url = "https://hooks.slack.com/services/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"
 }
 
 output "ec2_instance_id" {

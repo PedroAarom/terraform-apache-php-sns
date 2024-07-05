@@ -55,7 +55,7 @@ resource "aws_instance" "web" {
   connection {
     type        = var.connection_type
     user        = var.connection_user
-    private_key = file("./modules/compute/${var.connection_private_key}")  # Ruta a tu clave privada
+    private_key = file("./modules/compute/${var.connection_private_key}") 
     host        = self.public_ip
   }
 }
@@ -86,6 +86,7 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
+
 resource "aws_sns_topic" "example" {
   name = "example-topic"
 }
@@ -94,4 +95,38 @@ resource "aws_sns_topic_subscription" "example_subscription" {
   topic_arn = aws_sns_topic.example.arn
   protocol  = "email"
   endpoint  = var.sns_email_endpoint
+}
+
+resource "aws_sns_topic_subscription" "lambda_subscription" {
+  topic_arn = aws_sns_topic.example.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.sns_to_slack.arn
+}
+
+
+resource "aws_lambda_function" "sns_to_slack" {
+  function_name = "SnsToSlack"
+  role          =  "arn:aws:iam::022361345452:role/LabRole"
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.12"
+
+  filename = data.archive_file.python_lambda_package.output_path
+
+  environment {
+    variables = {
+      SLACK_WEBHOOK_URL = var.slack_webhook_url
+    }
+  }
+}
+resource "aws_lambda_permission" "allow_sns" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.sns_to_slack.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.example.arn
+}
+data "archive_file" "python_lambda_package" {  
+  type = "zip"  
+  source_file = "${path.module}/lambda_function.py" 
+  output_path = "${path.module}/lambda_function.zip"
 }

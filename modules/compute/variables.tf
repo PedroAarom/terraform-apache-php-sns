@@ -45,3 +45,7 @@ variable "provisioner_submit" {
 variable "sns_email_endpoint" {
     type    = string
 }
+
+variable "slack_webhook_url" {
+    type   = string
+}
